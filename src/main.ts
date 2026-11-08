@@ -5,6 +5,7 @@ import { bindGrids } from "./ui/grids";
 import { bindInspector } from "./ui/inspector";
 import { bindProofs } from "./ui/proofs";
 import { bindStage } from "./ui/stage";
+import { bindStages } from "./ui/stages";
 import { bindToolbar } from "./ui/toolbar";
 import { $ } from "./ui/dom";
 
@@ -14,6 +15,7 @@ bindToolbar(app);
 bindGrids(app);
 bindStage(app);
 bindInspector(app);
+bindStages(app);
 bindProofs();
 bindFiles(app);
 

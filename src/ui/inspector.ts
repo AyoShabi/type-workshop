@@ -33,11 +33,14 @@ function renderGroups(): void {
   if (state.link && !g) state.link = null;
   const opt = (id: string, label: string) =>
     `<option value="${id}"${id === (state.link || "") ? " selected" : ""}>${escapeHtml(label)}</option>`;
-  const auto = groups.filter((x) => x.custom == null);
+  const isStage = (x: { id: string }) => x.id.startsWith("stage:");
+  const auto = groups.filter((x) => x.custom == null && !isStage(x));
+  const stage = groups.filter(isStage);
   const mine = groups.filter((x) => x.custom != null);
   $("#linkGroup").innerHTML =
     opt("", "None: edit this glyph only") +
     `<optgroup label="Found in this font">${auto.map((x) => opt(x.id, `${x.name} (${x.gids.length})`)).join("")}</optgroup>` +
+    `<optgroup label="Design stages">${stage.map((x) => opt(x.id, `${x.name} (${x.gids.length})`)).join("")}</optgroup>` +
     `<optgroup label="Your groups">${mine.map((x) => opt(x.id, `${x.name} (${x.gids.length})`)).join("")}${opt(NEW_GROUP, "New group…")}</optgroup>`;
 
   const note = $("#linkNote");
