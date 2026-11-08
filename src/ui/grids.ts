@@ -1,5 +1,6 @@
 import { isEdited } from "../editor/project";
-import { SIGNATURE, currentGid, font, persist, proj, setCurrentGid, state } from "../editor/state";
+import { selectZone } from "../editor/edits";
+import { SIGNATURE, currentGid, font, linkedGroup, persist, proj, setCurrentGid } from "../editor/state";
 import type { App } from "./app";
 import { $, escapeHtml, hex4 } from "./dom";
 
@@ -23,10 +24,12 @@ export function renderGrids(): void {
 export function markGrids(): void {
   const p = proj();
   const cur = currentGid();
+  const grp = new Set(linkedGroup()?.gids || []);
   document.querySelectorAll<HTMLElement>(".cell").forEach((b) => {
     const g = +b.dataset.g!;
     b.classList.toggle("on", g === cur);
     b.classList.toggle("edited", isEdited(p.edits[g]));
+    b.classList.toggle("grp", grp.has(g));
   });
 }
 
@@ -35,7 +38,7 @@ export function bindGrids(app: App): void {
     const b = (e.target as Element).closest<HTMLElement>(".cell");
     if (!b) return;
     setCurrentGid(+b.dataset.g!);
-    state.selPts.clear();
+    selectZone();
     app.renderAll();
     persist();
   });

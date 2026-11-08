@@ -1,5 +1,6 @@
 import manifest from "../manifest.json";
 import type { Font } from "../font/types";
+import { allGroups, type GlyphGroup, type ZoneKey } from "./groups";
 import { newProject, type GlyphEdit, type Project } from "./project";
 
 export interface Axis {
@@ -54,6 +55,10 @@ export const state = {
   uploads: {} as Record<string, Family>,
   /** Selected point indices in the current glyph. */
   selPts: new Set<number>(),
+  /** Id of the glyph group that edits are linked across, if any. */
+  link: null as string | null,
+  /** The zone picked in the inspector. Linked reshapes use it while the selection is that zone. */
+  zone: null as ZoneKey | null,
 };
 
 /** URL of a file in public/fonts/<slug>/, relative to wherever the app is deployed. */
@@ -85,11 +90,26 @@ export const setCurrentGid = (gid: number) => {
   state.store.sel[state.store.slug] = gid;
 };
 
-/** The current glyph's edit record, created on first use. */
-export function glyphEdit(): GlyphEdit {
+/** A glyph's edit record (the current glyph's by default), created on first use. */
+export function glyphEdit(g = currentGid()): GlyphEdit {
   const p = proj();
-  const g = currentGid();
   return p.edits[g] || (p.edits[g] = {});
+}
+
+/** The linked group, if one is picked and still exists. */
+export function linkedGroup(): GlyphGroup | null {
+  if (!state.link || !state.font) return null;
+  return allGroups(state.font, proj()).find((g) => g.id === state.link) || null;
+}
+
+/**
+ * Glyphs a linked edit applies to: the whole linked group when the current glyph is in it,
+ * otherwise just the current glyph.
+ */
+export function linkedGids(): number[] {
+  const cur = currentGid();
+  const g = linkedGroup();
+  return g && g.gids.includes(cur) ? g.gids : [cur];
 }
 
 let saveT = 0;
