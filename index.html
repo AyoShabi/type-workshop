@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cheeply Type Workshop</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <h1><span>Cheeply</span> Type Workshop</h1>
+      <p>Pick a shortlisted open-licence face, drag its points, and watch the posters change. Export it as your own renamed brand font.</p>
+    </div>
+    <div class="actions">
+      <button id="undo" title="Undo (Ctrl+Z)">Undo</button>
+      <button id="redo" title="Redo (Ctrl+Shift+Z)">Redo</button>
+      <button id="saveProj">Save project</button>
+      <button id="openProj">Open project</button>
+      <input id="projFile" type="file" accept=".json,application/json" hidden>
+      <button id="licence">OFL licence</button>
+      <button id="export" class="primary">Export font (.ttf)</button>
+    </div>
+  </header>
+
+  <section class="toolbar" aria-label="Font settings">
+    <div class="field">
+      <label class="label" for="fontSel">Base font</label>
+      <select id="fontSel"></select>
+      <input id="upFile" type="file" accept=".ttf,font/ttf" hidden>
+    </div>
+    <div id="axes" style="display:contents"></div>
+    <div class="field">
+      <div class="row"><label class="label" for="track">Tracking</label><output id="trackOut">0</output></div>
+      <input id="track" type="range" min="-120" max="240" step="2" value="0">
+    </div>
+    <div class="field">
+      <label class="label" for="famName">Export name</label>
+      <input id="famName" type="text" value="Cheeply Display" spellcheck="false">
+      <span id="nameNote" class="note"></span>
+    </div>
+  </section>
+
+  <section class="bench">
+    <div class="panel glyphs" aria-label="Glyphs">
+      <div class="label">Signature glyphs</div>
+      <div class="grid" id="sigGrid"></div>
+      <div class="label">All glyphs</div>
+      <div class="grid" id="allGrid"></div>
+    </div>
+
+    <div class="panel editor">
+      <div class="edhead">
+        <div class="tools">
+          <label><input id="showGhost" type="checkbox" checked> Original outline</label>
+          <label><input id="solid" type="checkbox"> Solid preview</label>
+        </div>
+        <span class="note mono" id="pointInfo">Drag points. Shift-click to add, drag on empty space to box-select.</span>
+      </div>
+      <svg id="stage" aria-label="Glyph outline editor" tabindex="0"></svg>
+      <div class="hint">Arrows nudge 1 unit, Shift+arrows nudge 10. Ctrl+A selects all.</div>
+      <div class="loading" id="loading" hidden>Loading…</div>
+    </div>
+
+    <aside class="panel insp" aria-label="Glyph inspector">
+      <h2><span class="big" id="inspChar">C</span><span id="inspName" class="mono note"></span></h2>
+      <div class="label">Spacing (font units)</div>
+      <div class="kv">
+        <label for="lsb">Left side</label><input id="lsb" type="number" step="1">
+        <label for="rsb">Right side</label><input id="rsb" type="number" step="1">
+        <label for="advw">Width</label><input id="advw" type="number" step="1">
+      </div>
+      <hr>
+      <div class="label" id="xfLabel">Reshape whole glyph</div>
+      <div class="btns">
+        <button data-xf="sx-">Narrower</button><button data-xf="sx+">Wider</button>
+        <button data-xf="sy-">Shorter</button><button data-xf="sy+">Taller</button>
+        <button data-xf="sk+">Slant right</button><button data-xf="sk-">Slant left</button>
+        <button data-xf="up">Raise</button><button data-xf="dn">Lower</button>
+      </div>
+      <div id="ptBox" hidden>
+        <hr>
+        <div class="label">Selected point</div>
+        <div class="kv">
+          <label for="ptx">x</label><input id="ptx" type="number" step="1">
+          <label for="pty">y</label><input id="pty" type="number" step="1">
+        </div>
+      </div>
+      <hr>
+      <div class="btns"><button id="resetGlyph">Reset this glyph</button><button id="resetAll">Reset all edits</button></div>
+      <div id="confirmAll" class="note warn" hidden>Discard every edit in this font? <button id="confirmYes">Discard</button> <button id="confirmNo">Keep</button></div>
+      <p class="note" id="compNote" hidden></p>
+      <p class="note">Edits are stored as point offsets, so they carry over when you change weight or width.</p>
+    </aside>
+  </section>
+
+  <section class="proofs" aria-label="Live proofs">
+    <div class="spec">
+      <div class="row">
+        <input id="specText" type="text" value="Cheeply" aria-label="Specimen text" spellcheck="false">
+        <div class="field"><div class="row"><label class="label" for="specSize">Size</label><output id="specSizeOut">160px</output></div><input id="specSize" type="range" min="40" max="320" value="160"></div>
+      </div>
+      <div id="specimen" style="font-size:160px">Cheeply</div>
+    </div>
+    <div class="posters">
+      <article class="poster p1"><p class="h">Worn once.
+Wanted twice.</p><div class="s"><span>Sell it on Cheeply.</span><span class="tag">Cheeply</span></div></article>
+      <article class="poster p2"><p class="h">Clear out.
+Cash in.</p><div class="s"><span>Your wardrobe has a side hustle.</span><span class="tag">Cheeply</span></div></article>
+      <article class="poster p3"><p class="h"><span class="price">£4.50</span>
+for a jumper?</p><div class="s"><span>Second-hand. First-rate.</span><span class="tag">Cheeply</span></div></article>
+    </div>
+    <div class="spec waterfall" id="waterfall"></div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

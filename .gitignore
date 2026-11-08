@@ -1,3 +1,6 @@
-src/
+# Source variable fonts for build.py (not committed)
+/fonts-src/
 __pycache__/
 .DS_Store
+node_modules/
+dist/

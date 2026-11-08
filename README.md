@@ -1,21 +1,26 @@
 # Type Workshop: a browser font editor
 
-This started as the Cheeply Type Workshop. It's a font editor that runs in the browser, with no build step and no dependencies.
+This started as the Cheeply Type Workshop. It's a font editor that runs in the browser: a TypeScript app built with Vite, with no runtime dependencies.
 
 ## Run it
-Fonts load with `fetch`, so serve the folder over HTTP. Opening it with `file://` won't work.
+You need Node 20 or later.
 
-    cd site
-    python3 -m http.server 8000      # or: npx serve .
-    # open http://localhost:8000
+    npm install
+    npm run dev        # open the URL it prints
+    npm test           # parser/writer round-trip tests
+    npm run build      # type-checks, then writes the static site to dist/
 
-It deploys automatically to GitHub Pages on every push to `main` (see `.github/workflows/pages.yml`). Any other static host can serve `site/` as it is.
+It's set up for Netlify: `netlify.toml` builds with `npm run build` and publishes `dist/`. Connect the repo in Netlify (Add new site → Import an existing project) and it deploys `main` and gives each pull request a preview link. A GitHub Pages workflow (`.github/workflows/pages.yml`) also runs the tests and deploys `dist/` on every push to `main`. Any other static host can serve `dist/` as it is; the build uses relative paths, so it works under any sub-path.
 
 ## What's here
-- `site/index.html` contains the whole app: a TrueType parser and writer, the point editor, live preview and export, all in one file.
-- `site/fonts/<family>/*.ttf` holds static cuts of six OFL fonts at every weight and width step: Latin subset, hints removed.
-- `site/fonts/<family>/OFL.txt` is each font's licence. Ship it with any font you derive from these.
-- `build.py` regenerates those cuts from the Google Fonts variable files using fontTools (`pip install fonttools brotli`). It expects the source fonts in `src/`.
+- `index.html` is the page markup. `src/main.ts` wires the app together.
+- `src/font/` reads and writes TrueType with no dependencies: `parser.ts` (cmap, glyf, loca, hmtx, name), `writer.ts` (rebuilds glyf, loca, hmtx, name, head, hhea, OS/2 and copies every other table), `geometry.ts` and `types.ts`.
+- `src/editor/` holds the editing model with no DOM code: `project.ts` (edits stored as point offsets and how they apply), `edits.ts` (the operations), `history.ts` (undo and redo) and `state.ts` (current font, selection, localStorage).
+- `src/ui/` holds the views: toolbar, glyph grids, the SVG point editor (`stage.ts`), inspector, live preview font, proofs, and file export and import.
+- `src/manifest.json` lists the built-in families, their axes and any OFL Reserved Font Name.
+- `public/fonts/<family>/*.ttf` holds static cuts of six OFL fonts at every weight and width step: Latin subset, hints removed.
+- `public/fonts/<family>/OFL.txt` is each font's licence. Ship it with any font you derive from these.
+- `build.py` regenerates those cuts and `src/manifest.json` from the Google Fonts variable files using fontTools (`pip install fonttools brotli`). It expects the source fonts in `fonts-src/`.
 
 ## What it does
 - Opens a .ttf (one of the built-in fonts, or one you upload) and parses cmap, glyf, loca, hmtx and name itself.
@@ -32,7 +37,7 @@ It deploys automatically to GitHub Pages on every push to `main` (see `.github/w
 - Projects are saved in the browser's localStorage, or as a .json file.
 
 ## Roadmap to a Glyphs-style app
-1. Move into a repo as a TypeScript web app (Vite) and split out parser, writer, editor and UI modules.
+1. ~~Move into a repo as a TypeScript web app (Vite) and split out parser, writer, editor and UI modules.~~ Done.
 2. Pen tool: add and delete points, switch curve and corner, draw new glyphs and contours.
 3. Open and save .ufo and .designspace files, so work round-trips with Glyphs, Fontra and FontForge.
 4. Components and anchors, plus a kerning and spacing view.
