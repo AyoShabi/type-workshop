@@ -59,6 +59,8 @@ export const state = {
   link: null as string | null,
   /** The zone picked in the inspector. Linked reshapes use it while the selection is that zone. */
   zone: null as ZoneKey | null,
+  /** Editor tool: "select" moves points, "add" puts new points on the outline. */
+  tool: "select" as "select" | "add",
 };
 
 /** URL of a file in public/fonts/<slug>/, relative to wherever the app is deployed. */

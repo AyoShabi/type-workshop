@@ -6,8 +6,8 @@ import type { BBox, Font, Point } from "./types";
  * The editor supplies one that applies the user's edits; the writer itself knows nothing about edits.
  */
 export interface OutlineSource {
-  /** Points of a simple glyph, in the same order as the source glyph. */
-  points(gid: number): Point[];
+  /** Final outline of a simple glyph. Its point count can differ from the source glyph's. */
+  outline(gid: number): { ends: number[]; pts: Point[] };
   /** Fully resolved contours of any glyph (composites flattened), used for bounding boxes. */
   contours(gid: number): Point[][];
   advance(gid: number): number;
@@ -146,26 +146,32 @@ export function buildFont(font: Font, fam: string, src: OutlineSource): Uint8Arr
   let maxExt = -32768;
   let sumAdv = 0;
   let nAdv = 0;
+  // Added points can push a glyph past the source font's maxp limits, which rasterisers trust.
+  let maxPts = 0;
+  let maxCont = 0;
+  let maxCompPts = 0;
+  let maxCompCont = 0;
 
   for (let g = 0; g < N; g++) {
     const G = font.glyphs[g];
     let bytes: Uint8Array;
     let box: BBox | null = null;
     if (G.type === "simple") {
+      const o = src.outline(g);
+      maxPts = Math.max(maxPts, o.pts.length);
+      maxCont = Math.max(maxCont, o.ends.length);
       const r = encodeSimple(
-        G.ends,
-        src.points(g).map((q) => ({ x: Math.round(q.x), y: Math.round(q.y), on: q.on })),
+        o.ends,
+        o.pts.map((q) => ({ x: Math.round(q.x), y: Math.round(q.y), on: q.on })),
       );
       bytes = r.bytes;
       box = r.box;
     } else if (G.type === "composite") {
       bytes = G.raw.slice();
-      box = bbox(
-        src
-          .contours(g)
-          .flat()
-          .map((q) => ({ x: Math.round(q.x), y: Math.round(q.y) })),
-      );
+      const cs = src.contours(g);
+      maxCompPts = Math.max(maxCompPts, cs.flat().length);
+      maxCompCont = Math.max(maxCompCont, cs.length);
+      box = bbox(cs.flat().map((q) => ({ x: Math.round(q.x), y: Math.round(q.y) })));
       if (box) {
         const v = new DataView(bytes.buffer);
         const b = box;
@@ -229,6 +235,17 @@ export function buildFont(font: Font, fam: string, src: OutlineSource): Uint8Arr
   hh.setInt16(16, maxExt);
   hh.setUint16(34, N);
   T.hhea = hhea;
+
+  const maxp = font.tables.maxp;
+  if (maxp && maxp.length >= 32) {
+    const m = maxp.slice();
+    const mv = new DataView(m.buffer);
+    mv.setUint16(6, Math.max(mv.getUint16(6), maxPts));
+    mv.setUint16(8, Math.max(mv.getUint16(8), maxCont));
+    mv.setUint16(10, Math.max(mv.getUint16(10), maxCompPts));
+    mv.setUint16(12, Math.max(mv.getUint16(12), maxCompCont));
+    T.maxp = m;
+  }
 
   if (font.tables["OS/2"]) {
     const os = font.tables["OS/2"].slice();

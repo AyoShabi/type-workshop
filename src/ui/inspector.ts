@@ -4,6 +4,7 @@ import {
   addGroup,
   currentTarget,
   deleteGroup,
+  deletePoints,
   movePts,
   reshapeOp,
   resetAll,
@@ -17,7 +18,7 @@ import {
   type ReshapeKey,
 } from "../editor/edits";
 import { allGroups, groupChars, type ZoneKey } from "../editor/groups";
-import { advOf, contours, editedPts } from "../editor/project";
+import { advOf, baseOutline, contours, editedPts } from "../editor/project";
 import { currentGid, font, linkedGids, linkedGroup, proj, state } from "../editor/state";
 import type { App } from "./app";
 import { $, $input, escapeHtml, hex4 } from "./dom";
@@ -108,6 +109,8 @@ export function renderInspector(): void {
     cn.hidden = false;
   } else cn.hidden = true;
 
+  $("#delBox").hidden = !(sel.size && simple);
+  $("#delPts").textContent = sel.size > 1 ? `Delete ${sel.size} points` : "Delete point";
   const one = sel.size === 1 && simple;
   $("#ptBox").hidden = !one;
   if (one) {
@@ -116,9 +119,10 @@ export function renderInspector(): void {
     $input("#pty").value = String(Math.round(q.y));
   }
 
+  const base = baseOutline(f, gid, p);
   $("#pointInfo").textContent =
     G.type === "simple"
-      ? `${G.pts.length} points · ${G.ends.length} contour${G.ends.length === 1 ? "" : "s"}${sel.size ? ` · ${sel.size} selected` : ""}`
+      ? `${plural(base!.pts.length, "point")} · ${plural(base!.ends.length, "contour")}${sel.size ? ` · ${sel.size} selected` : ""}${base!.fits ? "" : " · added points don't fit this font"}`
       : G.type === "composite"
         ? "Composite glyph"
         : "Empty glyph";
@@ -189,6 +193,10 @@ export function bindInspector(app: App): void {
   };
   $input("#ptx").addEventListener("change", onPoint);
   $input("#pty").addEventListener("change", onPoint);
+
+  $("#delPts").onclick = () => {
+    if (deletePoints()) app.changed();
+  };
 
   $("#resetGlyph").onclick = () => {
     resetGlyph();
