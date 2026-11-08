@@ -39,6 +39,33 @@ input[type=range]{accent-color:var(--lilac);width:100%}
 .note{font-size:12px;color:var(--muted)}
 .note.warn{color:var(--warn)}
 
+/* Design stages */
+.stages{background:var(--bench);border:1px solid var(--line);border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+.stepper{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.stepper button{width:100%;text-align:left;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center;padding:8px 10px}
+.stepper .n{grid-row:span 2;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);font:600 12px var(--mono)}
+.stepper .t{font-weight:600}
+.stepper .pg{font-size:12px;color:var(--muted)}
+.stepper button[aria-current=step]{border-color:var(--lilac);background:#262f66}
+.stepper button[aria-current=step] .n{background:var(--lilac);color:var(--navy);border-color:var(--lilac)}
+.stepper button.done .n{background:var(--mint);color:var(--navy);border-color:var(--mint)}
+.stagebody{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
+.stageinfo{display:flex;flex-direction:column;gap:10px;min-width:0}
+.stageinfo p{margin:0;color:var(--muted);max-width:70ch}
+.fam{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-bottom:6px}
+.fam .fname{font-size:12px;color:var(--muted);min-width:110px}
+.fam .link{font-size:12px;padding:3px 8px;margin-left:4px}
+.fam .link[aria-pressed=true]{border-color:var(--sky);background:#1f3a66}
+.sl{position:relative;width:34px;height:34px;padding:0;display:grid;place-items:center;font-family:var(--live),var(--ui);font-size:19px;line-height:1;border-radius:6px}
+.sl.on{border-color:var(--lilac);background:#262f66}
+.sl.edited::after{content:"";position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:var(--pink)}
+.sl.reviewed{border-color:var(--mint);color:var(--mint)}
+.sl.missing{opacity:.35;cursor:default}
+#markReviewed[aria-pressed=true]{border-color:var(--mint);color:var(--mint)}
+.stageproof{display:flex;flex-direction:column;gap:4px;font-family:var(--live),var(--ui);font-size:clamp(22px,2.4vw,34px);line-height:1.15;overflow-wrap:anywhere;min-width:0;background:var(--well);border-radius:10px;padding:10px 14px}
+.stageinfo .btns{align-items:center}.stageinfo .btns button{flex:0 0 auto;font-size:13px;padding:6px 11px}
+@media (max-width:900px){.stagebody{grid-template-columns:1fr}}
+
 /* Bench */
 .bench{display:grid;grid-template-columns:240px minmax(0,1fr) 270px;gap:12px;min-height:520px}
 .panel{background:var(--bench);border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0;display:flex;flex-direction:column;gap:10px}
