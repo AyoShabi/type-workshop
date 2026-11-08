@@ -8,7 +8,7 @@
  */
 import { bbox } from "../font/geometry";
 import type { Font } from "../font/types";
-import { contours, newProject, type Project } from "./project";
+import { baseOutline, contours, newProject, type Project } from "./project";
 import { stageGroups } from "./stages";
 
 export type ZoneKey = "desc" | "asc" | "cap";
@@ -31,12 +31,15 @@ export const ZONES: Record<ZoneKey, Zone> = {
   cap: { key: "cap", label: "above cap height", has: (y, f) => y > f.cap + margin(f), anchor: (f) => f.cap },
 };
 
-/** Indices of a simple glyph's points that lie in the zone in the source outline. */
-export function zonePts(f: Font, gid: number, z: Zone): number[] {
-  const G = f.glyphs[gid];
-  if (G.type !== "simple") return [];
+/**
+ * Indices of a simple glyph's points that lie in the zone in the source outline (with any added
+ * or removed points, but before points were moved).
+ */
+export function zonePts(f: Font, gid: number, z: Zone, p: Project = newProject()): number[] {
+  const o = baseOutline(f, gid, p);
+  if (!o) return [];
   const out: number[] = [];
-  G.pts.forEach((q, i) => {
+  o.pts.forEach((q, i) => {
     if (z.has(q.y, f)) out.push(i);
   });
   return out;

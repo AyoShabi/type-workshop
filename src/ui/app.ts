@@ -3,7 +3,7 @@
  * importing each other, so the dependency graph stays one-way: app -> views -> editor -> font.
  */
 import { parseFont } from "../font/parser";
-import { selectZone } from "../editor/edits";
+import { pointCount, selectZone } from "../editor/edits";
 import * as history from "../editor/history";
 import { famInfo, fontUrl, isUpload, persist, proj, state } from "../editor/state";
 import { $, $input, toast } from "./dom";
@@ -98,11 +98,13 @@ export function createApp(): App {
       persist();
     },
     undo() {
-      if (history.undo()) afterRestore();
+      const n = pointCount();
+      if (history.undo()) afterRestore(n);
       updUndo();
     },
     redo() {
-      if (history.redo()) afterRestore();
+      const n = pointCount();
+      if (history.redo()) afterRestore(n);
       updUndo();
     },
     syncProjectControls() {
@@ -114,7 +116,9 @@ export function createApp(): App {
     },
   };
 
-  function afterRestore(): void {
+  /** `before` is the point count before the restore: if points were added or removed, the selected numbers no longer mean the same points. */
+  function afterRestore(before: number): void {
+    if (pointCount() !== before) state.selPts.clear();
     app.syncProjectControls();
     app.renderAll();
     scheduleLive(true);

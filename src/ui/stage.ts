@@ -1,8 +1,9 @@
 /** The SVG point editor: drawing, dragging, box-select and keyboard shortcuts. */
 import { bbox, contourD } from "../font/geometry";
-import { movePts } from "../editor/edits";
+import { addPoint, canEditPoints, deletePoints, movePts } from "../editor/edits";
 import { pushUndo } from "../editor/history";
-import { advOf, cleanEdit, contours, editedPts } from "../editor/project";
+import { hitSegment, type SegmentHit } from "../editor/outline";
+import { advOf, baseOutline, cleanEdit, contours, editedOutline, editedPts } from "../editor/project";
 import { currentGid, glyphEdit, proj, state } from "../editor/state";
 import type { App } from "./app";
 import { $, $input } from "./dom";
@@ -26,6 +27,12 @@ interface Marquee {
 
 let drag: Drag | null = null;
 let marq: Marquee | null = null;
+/** Where a click would add a point, shown while the Add point tool (or Alt) is active. */
+let hover: SegmentHit | null = null;
+/** Font units per screen pixel at the last render. */
+let upp = 1;
+/** How close to the outline, in screen pixels, a click has to be to add a point. */
+const HIT_PX = 10;
 
 const isSimple = () => !!state.font && state.font.glyphs[currentGid()].type === "simple";
 
@@ -48,7 +55,7 @@ export function renderEditor(): void {
   el.setAttribute("viewBox", vb.join(" "));
   const W = el.clientWidth || 800;
   const H = el.clientHeight || 560;
-  const upp = Math.max(vb[2] / W, vb[3] / H); // font units per screen pixel
+  upp = Math.max(vb[2] / W, vb[3] / H); // font units per screen pixel
   const r = 5.5 * upp;
 
   let h = "";
@@ -89,12 +96,39 @@ export function renderEditor(): void {
         : `<rect class="${cls}" data-i="${i}" x="${q.x - r * 0.8}" y="${-q.y - r * 0.8}" width="${r * 1.6}" height="${r * 1.6}" transform="rotate(45 ${q.x} ${-q.y})"/>`;
     });
     h += "</g>";
+    if (hover) h += `<circle class="addpv" cx="${hover.at.x}" cy="${-hover.at.y}" r="${r * 1.3}"/>`;
   }
   if (marq) {
     h += `<rect class="marq" x="${Math.min(marq.x0, marq.x1)}" y="${-Math.max(marq.y0, marq.y1)}" width="${Math.abs(marq.x1 - marq.x0)}" height="${Math.abs(marq.y1 - marq.y0)}"/>`;
   }
   el.innerHTML = h;
   el.classList.toggle("solid", $input("#solid").checked);
+  el.classList.toggle("adding", state.tool === "add");
+}
+
+/** Switches between the Select and Add point tools. */
+export function setTool(tool: "select" | "add"): void {
+  state.tool = tool;
+  hover = null;
+  $("#toolSelect").setAttribute("aria-pressed", String(tool === "select"));
+  $("#toolAdd").setAttribute("aria-pressed", String(tool === "add"));
+  renderEditor();
+}
+
+/** The segment under the pointer, if adding a point is possible there. */
+function segmentAt(at: { x: number; y: number }): SegmentHit | null {
+  const font = state.font;
+  if (!font || !canEditPoints()) return null;
+  return hitSegment(editedOutline(font, currentGid(), proj()), at, HIT_PX * upp);
+}
+
+function startDrag(at: { x: number; y: number }, record: boolean): void {
+  const e = glyphEdit();
+  e.pts = e.pts || {};
+  if (record) pushUndo();
+  const pts = e.pts;
+  drag = { start: at, base: new Map([...state.selPts].map((k) => [k, (pts[k] || [0, 0]).slice() as [number, number]])) };
+  svg().style.cursor = "grabbing";
 }
 
 /** Pointer position in font units (y up). */
@@ -129,13 +163,17 @@ export function bindStage(app: App): void {
         sel.clear();
         sel.add(i);
       }
-      const e = glyphEdit();
-      e.pts = e.pts || {};
-      pushUndo();
-      const pts = e.pts;
-      drag = { start: at, base: new Map([...sel].map((k) => [k, (pts[k] || [0, 0]).slice() as [number, number]])) };
-      el.style.cursor = "grabbing";
+      startDrag(at, true);
       renderEditor();
+    } else if (state.tool === "add" || ev.altKey) {
+      // Add a point on the outline and keep dragging it, as one undo step.
+      const hit = segmentAt(at);
+      hover = null;
+      if (hit && addPoint(hit.i, hit.t) != null) {
+        startDrag(at, false);
+        app.renderAll();
+        scheduleLive();
+      }
     } else {
       if (!ev.shiftKey) sel.clear();
       marq = { x0: at.x, y0: at.y, x1: at.x, y1: at.y, add: new Set(sel) };
@@ -146,6 +184,16 @@ export function bindStage(app: App): void {
   el.addEventListener("pointermove", (ev) => {
     const font = state.font;
     if (!font) return;
+    if (!drag && !marq) {
+      const want = isSimple() && !$input("#solid").checked && (state.tool === "add" || ev.altKey);
+      const onPoint = !!(ev.target as Element).closest(".p");
+      const next = want && !onPoint ? segmentAt(toFont(ev)) : null;
+      if (next || hover) {
+        hover = next;
+        renderEditor();
+      }
+      return;
+    }
     if (drag) {
       const at = toFont(ev);
       const dx = Math.round(at.x - drag.start.x);
@@ -189,6 +237,14 @@ export function bindStage(app: App): void {
     }
   };
   el.addEventListener("pointerup", endPtr);
+  el.addEventListener("pointerleave", () => {
+    if (hover) {
+      hover = null;
+      renderEditor();
+    }
+  });
+  $("#toolSelect").onclick = () => setTool("select");
+  $("#toolAdd").onclick = () => setTool("add");
   el.addEventListener("pointercancel", endPtr);
 
   $input("#showGhost").onchange = renderEditor;
@@ -213,11 +269,20 @@ export function bindStage(app: App): void {
       return;
     }
     if (!isSimple()) return;
-    const G = state.font!.glyphs[currentGid()];
     if (mod && key === "a" && document.activeElement === el) {
       ev.preventDefault();
-      if (G.type === "simple") state.selPts = new Set(G.pts.map((_, i) => i));
+      const o = baseOutline(state.font!, currentGid(), proj());
+      if (o) state.selPts = new Set(o.pts.map((_, i) => i));
       app.renderAll();
+      return;
+    }
+    if (!mod && !ev.altKey && (key === "v" || key === "p")) {
+      setTool(key === "p" ? "add" : "select");
+      return;
+    }
+    if ((ev.key === "Delete" || ev.key === "Backspace") && state.selPts.size) {
+      ev.preventDefault();
+      if (deletePoints()) app.changed();
       return;
     }
     if (ev.key === "Escape") {

@@ -6,7 +6,8 @@ import { bbox } from "../font/geometry";
 import type { BBox, Font, Point } from "../font/types";
 import { ZONES, zonePts, type CustomGroup, type Zone } from "./groups";
 import { pushUndo } from "./history";
-import { advOf, cleanEdit, contours, editedPts } from "./project";
+import { applyOp, deleteOps, splitIndex, type Outline, type OutlineOp } from "./outline";
+import { advOf, baseOutline, cleanEdit, contours, editedPts } from "./project";
 import { currentGid, font, glyphEdit, linkedGids, proj, state } from "./state";
 
 export type PointMap = (q: Point, box: BBox) => { x: number; y: number };
@@ -23,7 +24,7 @@ export function currentTarget(): Target {
   if (!sel.size) return { kind: "all" };
   if (state.zone) {
     const zone = ZONES[state.zone];
-    const zp = zonePts(font(), currentGid(), zone);
+    const zp = zonePts(font(), currentGid(), zone, proj());
     if (zp.length === sel.size && zp.every((i) => sel.has(i))) return { kind: "zone", zone };
   }
   return { kind: "points", idx: [...sel] };
@@ -31,7 +32,7 @@ export function currentTarget(): Target {
 
 /** Selects the picked zone's points in the current glyph. */
 export function selectZone(): void {
-  state.selPts = state.zone && state.font ? new Set(zonePts(state.font, currentGid(), ZONES[state.zone])) : new Set();
+  state.selPts = state.zone && state.font ? new Set(zonePts(state.font, currentGid(), ZONES[state.zone], proj())) : new Set();
 }
 
 /**
@@ -66,9 +67,11 @@ export function movePts(fn: PointMap, t = currentTarget()): boolean {
   if (f.glyphs[currentGid()].type !== "simple") return false;
   pushUndo();
   for (const gid of targetGids(t)) {
-    const G = f.glyphs[gid];
-    if (G.type !== "simple") continue;
-    const idx = t.kind === "points" ? t.idx : t.kind === "zone" ? zonePts(f, gid, t.zone) : G.pts.map((_, i) => i);
+    const base = baseOutline(f, gid, proj());
+    if (!base?.fits) continue;
+    const n = base.pts.length;
+    const idx =
+      t.kind === "points" ? t.idx.filter((i) => i < n) : t.kind === "zone" ? zonePts(f, gid, t.zone, proj()) : base.pts.map((_, i) => i);
     movePtsOf(f, gid, idx, fn);
   }
   return true;
@@ -135,6 +138,76 @@ export function setPoint(i: number, x: number, y: number): void {
   const d = e.pts[i] || [0, 0];
   e.pts[i] = [d[0] + Math.round(x - q.x), d[1] + Math.round(y - q.y)];
   cleanEdit(e);
+}
+
+/** Can points be added to or removed from glyph `gid`? Only simple glyphs whose edits fit this font. */
+export function canEditPoints(gid = currentGid()): boolean {
+  return !!baseOutline(font(), gid, proj())?.fits;
+}
+
+/** The outline with points moved but not shifted, so new offsets come out as edited minus base. */
+function moved(base: Outline, d: Record<number, [number, number]> | undefined): Outline {
+  return { ends: base.ends, pts: base.pts.map((q, i) => ({ x: q.x + (d?.[i]?.[0] || 0), y: q.y + (d?.[i]?.[1] || 0), on: q.on })) };
+}
+
+/**
+ * Applies add/remove steps to the current glyph. Each step runs on both the unmoved outline and
+ * the moved one, and the new offsets are the difference, so moved points stay where they are.
+ */
+function applyStructural(ops: OutlineOp[]): boolean {
+  const gid = currentGid();
+  const p = proj();
+  const start = baseOutline(font(), gid, p);
+  if (!start?.fits || !ops.length) return false;
+  let base: Outline | null = start;
+  let ed: Outline | null = moved(base, p.edits[gid]?.pts);
+  for (const op of ops) {
+    base = applyOp(base, op);
+    ed = applyOp(ed!, op);
+    if (!base || !ed || base.pts.length !== ed.pts.length) return false;
+  }
+  pushUndo();
+  const e = glyphEdit(gid);
+  e.ops = [...(e.ops || []), ...ops];
+  const pts: Record<number, [number, number]> = {};
+  base.pts.forEach((q, i) => {
+    const dx = Math.round(ed!.pts[i].x - q.x);
+    const dy = Math.round(ed!.pts[i].y - q.y);
+    if (dx || dy) pts[i] = [dx, dy];
+  });
+  e.pts = pts;
+  cleanEdit(e);
+  return true;
+}
+
+/**
+ * Adds an on-curve point to the current glyph on the segment at point `i` (see SegmentHit),
+ * at fraction `t` along it. Curves keep their shape. Returns the new point's index.
+ */
+export function addPoint(i: number, t: number): number | null {
+  const base = baseOutline(font(), currentGid(), proj());
+  if (!base?.fits || i < 0 || i >= base.pts.length) return null;
+  const at = splitIndex(base, i);
+  if (!applyStructural([{ split: i, t: Math.round(t * 1e4) / 1e4 }])) return null;
+  state.selPts = new Set([at]);
+  return at;
+}
+
+/** Removes the selected points of the current glyph. */
+export function deletePoints(idx: Iterable<number> = state.selPts): boolean {
+  const gid = currentGid();
+  const p = proj();
+  const base = baseOutline(font(), gid, p);
+  if (!base?.fits) return false;
+  // Decide merges on the outline as the user sees it.
+  const ok = applyStructural(deleteOps(moved(base, p.edits[gid]?.pts), idx));
+  if (ok) state.selPts = new Set();
+  return ok;
+}
+
+/** Number of points in the current glyph's outline. */
+export function pointCount(): number {
+  return state.font ? (baseOutline(state.font, currentGid(), proj())?.pts.length ?? 0) : 0;
 }
 
 /** Resets the current glyph, or every glyph in the linked group. */

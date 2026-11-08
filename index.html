@@ -71,13 +71,17 @@
     <div class="panel editor">
       <div class="edhead">
         <div class="tools">
+          <div class="seg" role="group" aria-label="Tool">
+            <button id="toolSelect" aria-pressed="true" title="Select and move points (V)">Select</button>
+            <button id="toolAdd" aria-pressed="false" title="Click the outline to add a point (P)">Add point</button>
+          </div>
           <label><input id="showGhost" type="checkbox" checked> Original outline</label>
           <label><input id="solid" type="checkbox"> Solid preview</label>
         </div>
-        <span class="note mono" id="pointInfo">Drag points. Shift-click to add, drag on empty space to box-select.</span>
+        <span class="note mono" id="pointInfo">Drag points. Shift-click to add to the selection, drag on empty space to box-select.</span>
       </div>
       <svg id="stage" aria-label="Glyph outline editor" tabindex="0"></svg>
-      <div class="hint">Arrows nudge 1 unit, Shift+arrows nudge 10. Ctrl+A selects all.</div>
+      <div class="hint">Arrows nudge 1 unit, Shift+arrows nudge 10. Ctrl+A selects all. P: add points (or Alt-click), V: select, Delete: remove.</div>
       <div class="loading" id="loading" hidden>Loading…</div>
     </div>
 
@@ -112,6 +116,7 @@
         <button data-xf="sk+">Slant right</button><button data-xf="sk-">Slant left</button>
         <button data-xf="up">Raise</button><button data-xf="dn">Lower</button>
       </div>
+      <div id="delBox" hidden><div class="btns"><button id="delPts">Delete point</button></div></div>
       <div id="ptBox" hidden>
         <hr>
         <div class="label">Selected point</div>
@@ -124,7 +129,7 @@
       <div class="btns"><button id="resetGlyph">Reset this glyph</button><button id="resetAll">Reset all edits</button></div>
       <div id="confirmAll" class="note warn" hidden>Discard every edit in this font? <button id="confirmYes">Discard</button> <button id="confirmNo">Keep</button></div>
       <p class="note" id="compNote" hidden></p>
-      <p class="note">Edits are stored as point offsets, so they carry over when you change weight or width.</p>
+      <p class="note">Edits carry over when you change weight or width: moves are stored as point offsets, and added or removed points are replayed on each cut.</p>
     </aside>
   </section>
 
