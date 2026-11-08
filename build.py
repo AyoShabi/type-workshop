@@ -2,7 +2,8 @@ import json, itertools, os, io, shutil
 from fontTools.ttLib import TTFont
 from fontTools.varLib import instancer
 from fontTools import subset
-S='src/'; O='site/fonts/'
+# Source variable fonts and their OFL-<name>.txt files go in fonts-src/ (not committed).
+S='fonts-src/'; O='public/fonts/'
 U=list(range(0x20,0x7f))+list(range(0xa0,0x180))+[0x2013,0x2014,0x2018,0x2019,0x201a,0x201c,0x201d,0x201e,0x2022,0x2026,0x2039,0x203a,0x20ac,0x2122,0x2190,0x2192,0x2191,0x2193,0x2605,0x2665]
 fams=[
  ('anybody','Anybody','anybody',{'wdth':[50,75,100,125,150],'wght':list(range(100,1000,100))},{'wdth':100,'wght':800},None),
@@ -31,4 +32,4 @@ for slug,name,gdir,axes,default,rfn in fams:
         f.save(O+f'{slug}/{fn}.ttf'); total+=os.path.getsize(O+f'{slug}/{fn}.ttf')
     man.append(dict(slug=slug,name=name,axes=[dict(tag=t,values=axes[t]) for t in tags],default=default,rfn=rfn,copyright=TTFont(S+slug+'.ttf')['name'].getDebugName(0)))
     print(slug,len(combos),total//1024,'KB')
-json.dump(man,open('site/manifest.json','w'),indent=1)
+json.dump(man,open('src/manifest.json','w'),indent=1)
