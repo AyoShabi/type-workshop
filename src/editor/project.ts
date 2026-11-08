@@ -21,6 +21,10 @@ export interface Project {
   family: string;
   /** Glyph groups the user made. */
   groups?: CustomGroup[];
+  /** Index of the design stage being worked on (see stages.ts). */
+  stage?: number;
+  /** Characters the user has marked as reviewed, stored as characters so they survive other cuts. */
+  reviewed?: string;
 }
 
 export const DEFAULT_FAMILY = "Cheeply Display";

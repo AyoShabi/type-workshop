@@ -9,6 +9,7 @@
 import { bbox } from "../font/geometry";
 import type { Font } from "../font/types";
 import { contours, newProject, type Project } from "./project";
+import { stageGroups } from "./stages";
 
 export type ZoneKey = "desc" | "asc" | "cap";
 
@@ -104,7 +105,7 @@ export function customGroups(f: Font, p: Project): GlyphGroup[] {
 }
 
 export function allGroups(f: Font, p: Project): GlyphGroup[] {
-  return [...autoGroups(f), ...customGroups(f, p)];
+  return [...autoGroups(f), ...stageGroups(f), ...customGroups(f, p)];
 }
 
 /** Characters of a group, for showing its members. */

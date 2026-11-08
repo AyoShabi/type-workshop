@@ -11,6 +11,7 @@ import { markGrids, renderGrids } from "./grids";
 import { renderInspector } from "./inspector";
 import { scheduleLive } from "./live";
 import { renderEditor } from "./stage";
+import { renderStages } from "./stages";
 import { checkName, renderToolbar } from "./toolbar";
 
 export interface App {
@@ -45,6 +46,7 @@ export function createApp(): App {
     renderAll() {
       renderEditor();
       renderInspector();
+      renderStages();
       markGrids();
       updUndo();
     },
