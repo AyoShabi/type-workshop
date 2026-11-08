@@ -10,7 +10,7 @@ You need Node 20 or later.
     npm test           # parser/writer round-trip tests
     npm run build      # type-checks, then writes the static site to dist/
 
-It deploys automatically to GitHub Pages on every push to `main` (see `.github/workflows/pages.yml`), which runs the tests and deploys `dist/`. Any other static host can serve `dist/` as it is; the build uses relative paths, so it works under any sub-path.
+It's set up for Netlify: `netlify.toml` builds with `npm run build` and publishes `dist/`. Connect the repo in Netlify (Add new site → Import an existing project) and it deploys `main` and gives each pull request a preview link. A GitHub Pages workflow (`.github/workflows/pages.yml`) also runs the tests and deploys `dist/` on every push to `main`. Any other static host can serve `dist/` as it is; the build uses relative paths, so it works under any sub-path.
 
 ## What's here
 - `index.html` is the page markup. `src/main.ts` wires the app together.
