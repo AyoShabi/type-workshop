@@ -3,6 +3,7 @@
  * importing each other, so the dependency graph stays one-way: app -> views -> editor -> font.
  */
 import { parseFont } from "../font/parser";
+import { selectZone } from "../editor/edits";
 import * as history from "../editor/history";
 import { famInfo, fontUrl, isUpload, persist, proj, state } from "../editor/state";
 import { $, $input, toast } from "./dom";
@@ -88,7 +89,7 @@ export function createApp(): App {
       if (store.sel[store.slug] == null || !font.glyphs[store.sel[store.slug]]) {
         store.sel[store.slug] = font.cmap.get(67) || 1; // "C"
       }
-      state.selPts.clear();
+      selectZone();
       renderGrids();
       app.renderAll();
       scheduleLive(true);

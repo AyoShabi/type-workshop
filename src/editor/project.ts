@@ -1,5 +1,6 @@
 import type { OutlineSource } from "../font/writer";
 import type { Font, Point } from "../font/types";
+import type { CustomGroup } from "./groups";
 
 /**
  * One glyph's edits. Points are stored as offsets from the source outline, not absolute positions,
@@ -18,6 +19,8 @@ export interface Project {
   edits: Record<number, GlyphEdit>;
   tracking: number;
   family: string;
+  /** Glyph groups the user made. */
+  groups?: CustomGroup[];
 }
 
 export const DEFAULT_FAMILY = "Cheeply Display";

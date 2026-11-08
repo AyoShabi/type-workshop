@@ -15,7 +15,7 @@ It's set up for Netlify: `netlify.toml` builds with `npm run build` and publishe
 ## What's here
 - `index.html` is the page markup. `src/main.ts` wires the app together.
 - `src/font/` reads and writes TrueType with no dependencies: `parser.ts` (cmap, glyf, loca, hmtx, name), `writer.ts` (rebuilds glyf, loca, hmtx, name, head, hhea, OS/2 and copies every other table), `geometry.ts` and `types.ts`.
-- `src/editor/` holds the editing model with no DOM code: `project.ts` (edits stored as point offsets and how they apply), `edits.ts` (the operations), `history.ts` (undo and redo) and `state.ts` (current font, selection, localStorage).
+- `src/editor/` holds the editing model with no DOM code: `project.ts` (edits stored as point offsets and how they apply), `edits.ts` (the operations), `groups.ts` (glyph groups and zones), `history.ts` (undo and redo) and `state.ts` (current font, selection, localStorage).
 - `src/ui/` holds the views: toolbar, glyph grids, the SVG point editor (`stage.ts`), inspector, live preview font, proofs, and file export and import.
 - `src/manifest.json` lists the built-in families, their axes and any OFL Reserved Font Name.
 - `public/fonts/<family>/*.ttf` holds static cuts of six OFL fonts at every weight and width step: Latin subset, hints removed.
@@ -25,6 +25,7 @@ It's set up for Netlify: `netlify.toml` builds with `npm run build` and publishe
 ## What it does
 - Opens a .ttf (one of the built-in fonts, or one you upload) and parses cmap, glyf, loca, hmtx and name itself.
 - Drag, box-select and nudge points. Scale, slant or raise a glyph. Change side bearings and tracking. Undo and redo.
+- Linked groups: pick a group (found automatically, such as Uppercase or Lowercase with tails, or one you make by typing its characters) and spacing, reshapes and resets apply to every glyph in it. Zones (below baseline, above x-height, above cap height) let one reshape act on the same part of every glyph, so you can lengthen all the tails at once.
 - Saves each edit as how far each point moved, so edits carry over between weights of the same family.
 - Live preview: every edit rebuilds the font and loads it into the page.
 - Exports a renamed .ttf. Kerning (GPOS) and other OpenType features (GSUB, GDEF) carry over. It blocks a name that uses an OFL Reserved Font Name.
@@ -32,6 +33,7 @@ It's set up for Netlify: `netlify.toml` builds with `npm run build` and publishe
 ## Current limits
 - You can't add or delete points or draw new glyphs.
 - Glyphs built from other glyphs (composites, such as é) only have their spacing editable.
+- Linked groups can't share hand-picked point moves, because point numbers differ between glyphs. That needs components (roadmap step 4).
 - No kerning editor, and no masters or interpolation.
 - It exports .ttf only: no .otf, .woff2, .ufo or .glyphs.
 - Projects are saved in the browser's localStorage, or as a .json file.

@@ -67,13 +67,28 @@
 
     <aside class="panel insp" aria-label="Glyph inspector">
       <h2><span class="big" id="inspChar">C</span><span id="inspName" class="mono note"></span></h2>
-      <div class="label">Spacing (font units)</div>
+      <div class="label">Linked group</div>
+      <select id="linkGroup" aria-label="Linked group"></select>
+      <p class="note" id="linkNote" hidden></p>
+      <div id="grpForm" class="kv" hidden>
+        <label for="grpName">Name</label><input id="grpName" type="text">
+        <label for="grpChars">Glyphs</label><input id="grpChars" type="text" placeholder="gjpqy">
+      </div>
+      <div class="btns" id="grpBtns" hidden><button id="grpDelete">Delete group</button></div>
+      <hr>
+      <div class="label" id="spaceLabel">Spacing (font units)</div>
       <div class="kv">
         <label for="lsb">Left side</label><input id="lsb" type="number" step="1">
         <label for="rsb">Right side</label><input id="rsb" type="number" step="1">
         <label for="advw">Width</label><input id="advw" type="number" step="1">
       </div>
       <hr>
+      <div class="label">Zone</div>
+      <div class="btns" id="zoneBtns">
+        <button data-zone="desc" aria-pressed="false">Below baseline</button>
+        <button data-zone="asc" aria-pressed="false">Above x-height</button>
+        <button data-zone="cap" aria-pressed="false">Above cap height</button>
+      </div>
       <div class="label" id="xfLabel">Reshape whole glyph</div>
       <div class="btns">
         <button data-xf="sx-">Narrower</button><button data-xf="sx+">Wider</button>
